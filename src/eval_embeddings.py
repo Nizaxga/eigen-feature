@@ -2,28 +2,14 @@ import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 
 from utils import (
-    cos_similarity_matrix,
-    effective_rank,
+    fit_train_pca_sklearn,
+    fit_train_subspace,
+    load_split,
     principal_angle_cosines,
     project_topk,
 )
 
 SEED = 0
-
-
-def fit_train_subspace(train_embedding, center=False):
-    mean = train_embedding.mean(axis=0) if center else None
-    X = train_embedding - mean if center else train_embedding
-
-    similarity = cos_similarity_matrix(X.T)
-    val, vec = np.linalg.eigh(similarity)
-
-    order = np.argsort(val)[::-1]
-    val, vec = val[order], vec[:, order]
-
-    rank = effective_rank(val / val.sum())
-    k = max(1, round(rank))
-    return k, vec, mean
 
 
 def build_projectors(train_embedding):
@@ -183,11 +169,6 @@ def retrieval_overlap_test(encoder_name, projectors, train_X, query_X, top_k=10,
             for i in range(n_queries)
         ]
         print(f"{label:>24}: mean overlap={np.mean(overlaps):.4f} (chance ~= {chance:.4f})")
-
-
-def load_split(prefix, split):
-    data = np.load(f"MINI_IMAGE_NET/{prefix}_{split}.npz")
-    return data["embeddings"], data["labels"]
 
 
 def run_all_tests(encoder_name, prefix):
