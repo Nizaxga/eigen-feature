@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 
-from eval_embeddings import fit_train_pca_sklearn, fit_train_subspace, load_split
-from utils import project_topk
+from utils import fit_train_pca_sklearn, fit_train_subspace, load_split, project_topk
+
 
 SEED = 0
 CHECKPOINTS = [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 50000]

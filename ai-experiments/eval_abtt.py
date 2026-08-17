@@ -1,8 +1,14 @@
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 
-from eval_embeddings import fit_train_pca_sklearn, fit_train_subspace, load_split
-from utils import cos_similarity_matrix, effective_rank, remove_topd
+from utils import (
+    cos_similarity_matrix,
+    effective_rank,
+    fit_train_pca_sklearn,
+    fit_train_subspace,
+    load_split,
+    remove_topd,
+)
 
 D_VALUES = [1, 2, 3, 5, 10]
 

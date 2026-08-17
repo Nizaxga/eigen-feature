@@ -1,5 +1,4 @@
 import numpy as np
-from sklearn.decomposition import PCA
 from sklearn.neighbors import KNeighborsClassifier
 
 from utils import (
@@ -25,13 +24,6 @@ def fit_train_subspace(train_embedding, center=False):
     rank = effective_rank(val / val.sum())
     k = max(1, round(rank))
     return k, vec, mean
-
-
-def fit_train_pca_sklearn(train_embedding):
-    pca = PCA().fit(train_embedding)
-    rank = effective_rank(pca.explained_variance_ / pca.explained_variance_.sum())
-    k = max(1, round(rank))
-    return k, pca
 
 
 def build_projectors(train_embedding):

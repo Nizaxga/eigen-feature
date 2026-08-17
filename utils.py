@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.decomposition import PCA
 
 
 def effective_rank(eigenvalues):
@@ -30,3 +31,27 @@ def remove_topd(embedding, basis, d, mean=None):
         embedding = embedding - mean
     top = basis[:, :d]
     return embedding - (embedding @ top) @ top.T
+
+def fit_train_pca_sklearn(train_embedding):
+    pca = PCA().fit(train_embedding)
+    rank = effective_rank(pca.explained_variance_ / pca.explained_variance_.sum())
+    k = max(1, round(rank))
+    return k, pca
+
+def fit_train_subspace(train_embedding, center=False):
+    mean = train_embedding.mean(axis=0) if center else None
+    X = train_embedding - mean if center else train_embedding
+
+    similarity = cos_similarity_matrix(X.T)
+    val, vec = np.linalg.eigh(similarity)
+
+    order = np.argsort(val)[::-1]
+    val, vec = val[order], vec[:, order]
+
+    rank = effective_rank(val / val.sum())
+    k = max(1, round(rank))
+    return k, vec, mean
+
+def load_split(prefix, split):
+    data = np.load(f"MINI_IMAGE_NET/{prefix}_{split}.npz")
+    return data["embeddings"], data["labels"]
