@@ -16,3 +16,17 @@ def effective_dimension(eigenvalues, threshold):
     eigenvalues = eigenvalues / eigenvalues.sum()
     cumulative = np.cumsum(eigenvalues)
     return np.searchsorted(cumulative, threshold) + 1
+
+def project_topk(embedding, eigenvectors, k, mean=None):
+    if mean is not None:
+        embedding = embedding - mean
+    return embedding @ eigenvectors[:, :k]
+
+def principal_angle_cosines(basis_a, basis_b):
+    return np.linalg.svd(basis_a.T @ basis_b, compute_uv=False)
+
+def remove_topd(embedding, basis, d, mean=None):
+    if mean is not None:
+        embedding = embedding - mean
+    top = basis[:, :d]
+    return embedding - (embedding @ top) @ top.T
