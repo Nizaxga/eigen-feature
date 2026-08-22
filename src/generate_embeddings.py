@@ -12,6 +12,16 @@ CLI usage also works (e.g. local runs, no notebook):
         --split train --max-samples 200   # smoke test first
     !python src/generate_embeddings.py --model siglip-base-patch16 --dataset cifar100 --split train
 
+google-colab-cli usage (https://github.com/googlecolab/google-colab-cli): `colab exec -f`
+sends this file's source straight into the persistent kernel, so top-level code runs with
+__name__ == "__main__" but no __file__ global (unlike a real `python script.py` run). The
+guard below (_is_cli_invocation) tells the two apart, so a `colab exec -f
+src/generate_embeddings.py` call just (re)defines the registries/functions without crashing
+on argparse, then a follow-up `colab exec` call invokes _maybe_mount_drive_outputs() + run()
+directly — same convention as the notebook path below.
+    colab exec -s <session> -f src/generate_embeddings.py
+    echo "_maybe_mount_drive_outputs(); run('siglip-base-patch16', 'cifar100', 'train', 64, None, 'outputs/embeddings', 'cuda')" | colab exec -s <session>
+
 _maybe_mount_drive_outputs() below only runs on the CLI path (inside __main__) — the
 notebook does its own mount+symlink in its own cells instead, since importing this
 module from a notebook never executes __main__.
@@ -45,6 +55,14 @@ def _maybe_mount_drive_outputs():
         os.symlink(drive_outputs, "outputs")
         print(f"[LOG] outputs/ symlinked to {drive_outputs}")
 
+
+def _is_cli_invocation():
+    """True for `python generate_embeddings.py ...`; False when this file's source is
+    exec'd inside a Jupyter/Colab kernel (no __file__ global in that case), e.g. via
+    `colab exec -f`."""
+    return "__file__" in globals()
+
+
 MODEL_REGISTRY = {
     "clip-vit-base-patch32": {"hf_id": "openai/clip-vit-base-patch32", "kind": "clip_like"},
     "dinov2-vitb14": {"hf_id": "facebook/dinov2-base", "kind": "pooler"},
@@ -76,8 +94,13 @@ DATASET_REGISTRY = {
 
 def extract_features(model, kind, pixel_values):
     if kind == "clip_like":
-        return model.get_image_features(pixel_values=pixel_values)
-    return model(pixel_values=pixel_values).pooler_output
+        out = model.get_image_features(pixel_values=pixel_values)
+    else:
+        out = model(pixel_values=pixel_values)
+
+    if torch.is_tensor(out):
+        return out
+    return out.image_embeds if hasattr(out, "image_embeds") else out.pooler_output
 
 
 def run(model_name, dataset_name, split, batch_size, max_samples, output_root, device):
@@ -121,7 +144,7 @@ def run(model_name, dataset_name, split, batch_size, max_samples, output_root, d
     print(f"saved {out_path}: embeddings{embeddings.shape} labels{labels.shape}")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and _is_cli_invocation():
     _maybe_mount_drive_outputs()
 
     parser = argparse.ArgumentParser()
